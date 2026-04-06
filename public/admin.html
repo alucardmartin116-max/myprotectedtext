@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 text-white p-5">
+
+<div class="flex gap-5">
+
+<!-- LEFT SIDE (TERA SAME CODE) -->
+<div class="flex-1">
+
+<h1 class="text-2xl mb-4">👑 Admin Panel</h1>
+
+<div class="flex gap-2 mb-3">
+<input id="searchUser" placeholder="Username" class="p-2 bg-gray-700 rounded">
+
+<button onclick="loadUser()" class="bg-green-600 px-3 py-2 rounded">
+Load
+</button>
+
+<button onclick="logout()" class="bg-red-600 px-3 py-2 rounded ml-auto">
+Logout
+</button>
+</div>
+
+<h2 id="adminUser" class="mb-2 text-blue-400"></h2>
+
+<div id="adminTabs" class="flex gap-2 mb-3"></div>
+
+<textarea id="adminNote" class="w-full h-[60vh] p-4 rounded bg-gray-800" readonly></textarea>
+
+<hr class="my-4">
+
+<h3>🔐 Reset Password</h3>
+
+<input id="newUserPass" type="password" placeholder="New Password"
+class="p-2 bg-gray-700 rounded mb-2">
+
+<button onclick="resetPassword()" class="bg-yellow-600 px-3 py-2 rounded">
+Reset Password
+</button>
+
+</div>
+
+<!-- RIGHT SIDE USERS LIST (NEW ADD) -->
+<div class="w-48 bg-gray-800 p-3 rounded h-[80vh] overflow-y-auto">
+
+<h3 class="text-center mb-2">Users</h3>
+
+<button onclick="loadAllUsers()"
+class="w-full bg-blue-600 p-2 mb-2 rounded text-sm">
+Load All
+</button>
+
+<div id="allUsersList" class="space-y-2 text-sm"></div>
+
+</div>
+
+</div>
+
+<script>
+let user = localStorage.getItem("user");
+let role = localStorage.getItem("role");
+
+if (!user || role !== "admin") {
+    alert("Access denied");
+    location.href = "index.html";
+}
+
+function logout(){
+    localStorage.clear();
+    location.href = "index.html";
+}
+
+let notes = {};
+let current = "";
+
+// load user notes
+async function loadUser() {
+    const target = document.getElementById("searchUser").value;
+
+    const res = await fetch('/admin/user', {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ admin: user, targetUser: target })
+    });
+
+    const data = await res.json();
+
+    if (data.error) return alert(data.error);
+
+    notes = data.data;
+    current = Object.keys(notes)[0];
+
+    document.getElementById("adminUser").innerText = "User: " + target;
+
+    renderTabs();
+    showNote();
+}
+
+// render tabs
+function renderTabs(){
+    const div = document.getElementById("adminTabs");
+    div.innerHTML = "";
+
+    for(let t in notes){
+        const b = document.createElement("button");
+        b.innerText = t;
+
+        b.className = "px-3 py-1 bg-gray-700 rounded";
+        if(t === current) b.className = "px-3 py-1 bg-blue-600 rounded";
+
+        b.onclick = () => {
+            current = t;
+            showNote();
+            renderTabs();
+        };
+
+        div.appendChild(b);
+    }
+}
+
+// show note
+function showNote(){
+    document.getElementById("adminNote").value = notes[current] || "";
+}
+
+// reset password
+async function resetPassword(){
+    const target = document.getElementById("searchUser").value;
+    const pass = document.getElementById("newUserPass").value;
+
+    const res = await fetch('/admin/reset-password', {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+            admin: user,
+            targetUser: target,
+            newPassword: pass
+        })
+    });
+
+    const data = await res.json();
+    alert(data.error || "Password reset done");
+}
+
+// 🔥 NEW FUNCTION (ALL USERS LIST)
+async function loadAllUsers() {
+    const res = await fetch('/all-users');
+    const users = await res.json();
+
+    const box = document.getElementById("allUsersList");
+    box.innerHTML = "";
+
+    users.forEach(u => {
+        const div = document.createElement("div");
+
+        div.innerText = u;
+        div.className = "bg-gray-700 p-2 rounded cursor-pointer hover:bg-gray-600";
+
+        div.onclick = () => {
+            document.getElementById("searchUser").value = u;
+            loadUser();
+        };
+
+        box.appendChild(div);
+    });
+}
+</script>
+
+</body>
+</html>
