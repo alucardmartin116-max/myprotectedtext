@@ -1,10 +1,19 @@
 const express = require('express');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+const path = require('path');
 
 const app = express();
+
 app.use(express.json());
-app.use(express.static('public'));
+
+// ✅ STATIC FILES (IMPORTANT)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ✅ DEFAULT ROUTE (IMPORTANT)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const USERS = 'users.json';
 
@@ -81,13 +90,13 @@ app.post('/load', (req, res) => {
     res.json({ data });
 });
 
-// GET ALL USERS
+// ===== GET ALL USERS =====
 app.get('/all-users', (req, res) => {
     let users = read(USERS);
     res.json(Object.keys(users));
 });
 
-// ===== USER PASSWORD CHANGE =====
+// ===== CHANGE PASSWORD =====
 app.post('/change-password', async (req, res) => {
     const { username, oldPassword, newPassword } = req.body;
 
@@ -104,7 +113,7 @@ app.post('/change-password', async (req, res) => {
     res.json({ status: "Password updated" });
 });
 
-// ===== ADMIN GET USER NOTES =====
+// ===== ADMIN: GET USER NOTES =====
 app.post('/admin/user', (req, res) => {
     const { admin, targetUser } = req.body;
 
@@ -124,7 +133,7 @@ app.post('/admin/user', (req, res) => {
     res.json({ data });
 });
 
-// ===== ADMIN RESET PASSWORD =====
+// ===== ADMIN: RESET PASSWORD =====
 app.post('/admin/reset-password', async (req, res) => {
     const { admin, targetUser, newPassword } = req.body;
 
@@ -144,4 +153,6 @@ app.post('/admin/reset-password', async (req, res) => {
     res.json({ status: "Password reset successful" });
 });
 
-app.listen(3000, () => console.log("🚀 http://localhost:3000"));
+// ✅ RENDER PORT FIX
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
